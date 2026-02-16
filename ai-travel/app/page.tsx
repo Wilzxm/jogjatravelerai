@@ -10,7 +10,9 @@ export default function Home() {
   ]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
   const chatContainerRef = useRef<HTMLDivElement>(null);
+  const recognitionRef = useRef<any>(null);
 
   const translations = {
     id: {
@@ -35,6 +37,7 @@ export default function Home() {
       aiError: "Maaf, saya tidak mengerti.",
       aiConnectionError: "Terjadi kesalahan koneksi. Silakan coba lagi.",
       aiProcessing: "Sedang merencanakan liburanmu...",
+      listening: "Mendengarkan...",
     },
     en: {
       brandSub: "First-time traveler &\nSolo Backpacker",
@@ -58,6 +61,7 @@ export default function Home() {
       aiError: "Sorry, I didn't understand that.",
       aiConnectionError: "Connection error occurred. Please try again.",
       aiProcessing: "Planning your holiday...",
+      listening: "Listening...",
     },
     jv: {
       brandSub: "Pelancong Pemula &\nSolo Backpacker",
@@ -81,6 +85,7 @@ export default function Home() {
       aiError: "Ngapunten, kulo mboten ngertos.",
       aiConnectionError: "Wonten masalah koneksi. Cobi malih.",
       aiProcessing: "Sekedap, tak gaweke rencana...",
+      listening: "Ngrungokke...",
     },
   };
 
@@ -211,6 +216,55 @@ export default function Home() {
     }
   };
 
+  const toggleRecording = () => {
+    if (isRecording) {
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+      }
+      setIsRecording(false);
+      return;
+    }
+
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      alert("Browser anda tidak mendukung fitur Voice Note. Silakan gunakan Chrome atau Edge.");
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognitionRef.current = recognition;
+
+    recognition.continuous = false;
+    recognition.interimResults = false;
+
+    // Set language based on selected language
+    // Fallback for Javanese to Indonesian if browser doesn't strictly support 'jv' (though 'jv-ID' exists in some)
+    if (language === 'id') recognition.lang = 'id-ID';
+    else if (language === 'en') recognition.lang = 'en-US';
+    else if (language === 'jv') recognition.lang = 'jv-ID'; // Attempt Javanese
+
+    recognition.onstart = () => {
+      setIsRecording(true);
+    };
+
+    recognition.onresult = (event: any) => {
+      const transcript = event.results[0][0].transcript;
+      setInput(transcript);
+    };
+
+    recognition.onerror = (event: any) => {
+      console.error("Speech recognition error", event.error);
+      setIsRecording(false);
+    };
+
+    recognition.onend = () => {
+      setIsRecording(false);
+    };
+
+    recognition.start();
+  };
+
   return (
     <div className="app-container">
       {/* Sidebar */}
@@ -335,10 +389,17 @@ export default function Home() {
             onChange={(e) => setInput(e.target.value)}
             onKeyPress={handleKeyPress}
             className="input-field"
-            placeholder={t.inputPlaceholder}
+            placeholder={isRecording ? t.listening : t.inputPlaceholder}
             autoComplete="off"
             suppressHydrationWarning
           />
+          <button
+            className={`btn ${isRecording ? 'btn-recording' : 'btn-secondary'}`}
+            onClick={toggleRecording}
+            title="Voice Note"
+          >
+            <i className={`fa-solid ${isRecording ? 'fa-microphone-slash' : 'fa-microphone'}`}></i>
+          </button>
           <button className="btn btn-primary" onClick={handleSendMessage}>
             <i className="fa-solid fa-paper-plane"></i> <span>{t.generate}</span>
           </button>

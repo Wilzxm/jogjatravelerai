@@ -30,7 +30,13 @@ export async function POST(req: Request) {
             // Verify ownership of the chat
             const chat = await prisma.chat.findUnique({
                 where: { id: chatId },
-                include: { user: true },
+                include: {
+                    user: true,
+                    messages: {
+                        select: { id: true },
+                        take: 1,
+                    },
+                },
             });
 
             if (!chat || chat.user.email !== session.user.email) {

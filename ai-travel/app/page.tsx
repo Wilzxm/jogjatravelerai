@@ -178,7 +178,7 @@ export default function Home() {
     } else if (selectedChatId === null && !isLoading) {
       // Only reset if we explicitly switched to "New Chat" (null ID) and aren't waiting for a create
       // If we just loaded the page as guest, we keep the default greeting
-      if (session && messages.length > 1) {
+      if (session && localMessages.length > 1) {
         setLocalMessages([{ role: "ai", content: t.aiGreeting }]);
       }
     }
@@ -189,7 +189,7 @@ export default function Home() {
     if (!session) return null;
     if (selectedChatId) return selectedChatId;
 
-    const newChat = await createChatMutation.mutateAsync();
+    const newChat = await createChatMutation.mutateAsync(undefined);
     return newChat.id;
   };
 

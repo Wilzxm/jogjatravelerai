@@ -65,22 +65,58 @@ ATURAN PENTING:
         ${message}
 `;
 
-    const chatCompletion = await groq.chat.completions.create({
-      messages: [
-        {
-          role: "user",
-          content: prompt,
-        },
-      ],
-      model: "llama-3.3-70b-versatile", // Using Llama 3.3 70B for high quality
-      // model: "mixtral-8x7b-32768", // Alternative: Mixtral
-    });
+    // --- DEEPSEEK SWITCH ---
+    // If DEEPSEEK_API_KEY exists, use DeepSeek. Otherwise fallback to Groq.
+    const deepseekKey = process.env.DEEPSEEK_API_KEY;
 
-    const text = chatCompletion.choices[0]?.message?.content || "Maaf, ada masalah saat menghubungi AI.";
+    let text = "";
+
+    if (deepseekKey) {
+      console.log("Using DeepSeek API...");
+      const response = await fetch("https://api.deepseek.com/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${deepseekKey}`
+        },
+        body: JSON.stringify({
+          model: "deepseek-chat",
+          messages: [
+            { role: "system", content: "You are a helpful travel assistant for Yogyakarta." },
+            // Note: DeepSeek might behave better if instructions are in user prompt or system.
+            // Putting the main prompt in user message as before for consistency.
+            { role: "user", content: prompt }
+          ],
+          stream: false
+        })
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`DeepSeek API Error: ${response.status} - ${errorText}`);
+      }
+
+      const data = await response.json();
+      text = data.choices[0]?.message?.content || "Maaf, DeepSeek tidak memberikan respon.";
+
+    } else {
+      console.log("Using Groq API...");
+      const chatCompletion = await groq.chat.completions.create({
+        messages: [
+          {
+            role: "user",
+            content: prompt,
+          },
+        ],
+        model: "llama-3.3-70b-versatile",
+      });
+
+      text = chatCompletion.choices[0]?.message?.content || "Maaf, ada masalah saat menghubungi AI.";
+    }
 
     return Response.json({ reply: text });
   } catch (error) {
-    console.error("GROQ ERROR:", error);
-    return Response.json({ reply: "Maaf, AI sedang sibuk atau ada error." }, { status: 500 });
+    console.error("AI API ERROR:", error);
+    return Response.json({ reply: "Maaf, AI sedang sibuk atau ada error pada server." }, { status: 500 });
   }
 }

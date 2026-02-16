@@ -143,8 +143,74 @@ export default function Home() {
     scrollToBottom();
   }, [messages, isLoading]);
 
+  // Add Puter type definition
   const openMap = () => {
     window.open("https://maps.google.com/?q=Yogyakarta", "_blank");
+  };
+
+  interface Window {
+    puter: any;
+    SpeechRecognition: any;
+    webkitSpeechRecognition: any;
+  }
+
+  const createTravelPrompt = (message: string, language: string) => {
+    let languageInstruction = "";
+    let labels = {
+      contact: "Kontak",
+      hours: "Jam Buka",
+      seeContact: "Lihat Kontak di Google Maps",
+      seeHours: "Lihat Jam Buka di Google Maps"
+    };
+
+    if (language === "en") {
+      languageInstruction = "Gunakan bahasa Inggris (English) yang santai namun sopan.";
+      labels = {
+        contact: "Contact",
+        hours: "Opening Hours",
+        seeContact: "See Contact on Google Maps",
+        seeHours: "See Opening Hours on Google Maps"
+      };
+    } else if (language === "jv") {
+      languageInstruction = "Gunakan bahasa Jawa (Ngoko Alus / Krama Inggil yang sopan dan akrab).";
+      labels = {
+        contact: "Kontak",
+        hours: "Jam Buka",
+        seeContact: "Delok Kontak ning Google Maps",
+        seeHours: "Delok Jam Buka ning Google Maps"
+      };
+    } else {
+      languageInstruction = "Gunakan bahasa Indonesia yang santai tapi sopan.";
+    }
+
+    return `
+Kamu adalah AI travel planner khusus untuk wilayah Daerah Istimewa Yogyakarta (DIY).
+Tugasmu adalah membuat itinerary lengkap + estimasi biaya transportasi untuk wisata di Jogja.
+
+ATURAN PENTING:
+1. HANYA jawab pertanyaan seputar wisata, kuliner, dan budaya di Provinsi DIY (Yogyakarta, Sleman, Bantul, Gunungkidul, Kulon Progo).
+2. Jika user bertanya tentang tempat di luar DIY (misal: Bali, Bandung, Jakarta, luar negeri), tolak dengan sopan dengan kalimat "Maaf, saya hanya bisa membantu merencanakan liburan di Jogja. 🙏" (Sesuaikan dengan bahasa yang dipilih).
+3. **WAJIB MENYERTAKAN LINK GOOGLE MAPS** untuk setiap tempat wisata atau kuliner yang kamu sebutkan.
+   Format link: [Nama Tempat](https://www.google.com/maps/search/?api=1&query=Nama+Tempat+Jogja)
+      Contoh: "Kamu bisa mengunjungi [Candi Prambanan](https://www.google.com/maps/search/?api=1&query=Candi+Prambanan+Jogja)."
+4. Berikan jawaban yang ramah, gaul, dan informatif.
+5. ${languageInstruction}
+6. **INFORMASI KONTAK & JAM BUKA:**
+   - **Nomor Telepon/WA:** JANGAN TAMPILKAN nomor telepon secara langsung. Ganti dengan link Google Maps.
+   - **Jam Operasional:** SEBUTKAN jam buka yang spesifik (misal: "Buka setiap hari pukul 08.00 - 17.00 WIB" atau "Open daily 8 AM - 5 PM"). Hindari menyuruh user mengecek sendiri kecuali informasi tersebut sangat dinamis atau tidak diketahui.
+   - **Format Wajib (Gunakan Label Bahasa ${language === 'en' ? 'Inggris' : (language === 'jv' ? 'Jawa' : 'Indonesia')}):**
+     - 📞 **${labels.contact}:** [${labels.seeContact}](https://www.google.com/maps/search/?api=1&query=Nomor+Telepon+Nama+Tempat+Jogja)
+     - ⏰ **${labels.hours}:** [Jam Buka]
+     (Ganti 'Nama+Tempat' dengan nama tempat yang sesuai di link, dan [Jam Buka] dengan data nyata sesuai bahasa).
+
+7. **Review & Koreksi:**
+   - Pastikan setiap tempat wisata memiliki link Google Maps pada namanya.
+   - Pastikan rekomendasi biaya masuk akal.
+
+
+      Request User:
+        ${message}
+`;
   };
 
   const handleSendMessage = async () => {
@@ -156,59 +222,96 @@ export default function Home() {
     setIsLoading(true);
 
     try {
-      const response = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: userMessage, language }),
-      });
+      // 1. Try Puter.js (Client-side Opus 4.6)
+      if ((window as any).puter) {
+        console.log("Attempting to use Puter.js (Opus 4.6)...");
+        const prompt = createTravelPrompt(userMessage, language);
+        const response = await (window as any).puter.ai.chat(prompt, { model: 'claude-opus-4-6' });
 
-      const data = await response.json();
-
-      if (data.reply) {
-        setMessages((prev) => [...prev, { role: "ai", content: data.reply }]);
+        if (response?.message?.content?.[0]?.text) {
+          setMessages((prev) => [...prev, { role: "ai", content: response.message.content[0].text }]);
+          return; // Success! Exit function.
+        }
       } else {
-        setMessages((prev) => [...prev, { role: "ai", content: t.aiError }]);
+        console.warn("Puter.js not found on window object.");
       }
-    } catch (error) {
-      console.error(error);
-      setMessages((prev) => [
-        ...prev,
-        { role: "ai", content: t.aiConnectionError },
-      ]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
-  const handleQuickAsk = (question: string) => {
-    const userMessage = question;
-    setMessages((prev) => [...prev, { role: "user", content: userMessage }]);
-    setInput("");
-    setIsLoading(true);
+      throw new Error("Puter fallback"); // Trigger fallback if Puter fails or returns invalid data
+    } catch (puterError) {
+      console.warn("Puter.js failed, falling back to Server/Groq:", puterError);
 
-    fetch("/api/chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message: userMessage, language }),
-    })
-      .then((res) => res.json())
-      .then((data) => {
+      // 2. Fallback to Server API (Groq)
+      try {
+        const response = await fetch("/api/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: userMessage, language }),
+        });
+
+        const data = await response.json();
+
         if (data.reply) {
           setMessages((prev) => [...prev, { role: "ai", content: data.reply }]);
         } else {
           setMessages((prev) => [...prev, { role: "ai", content: t.aiError }]);
         }
-      })
-      .catch((error) => {
+      } catch (error) {
+        console.error("Server API Error:", error);
+        setMessages((prev) => [
+          ...prev,
+          { role: "ai", content: t.aiConnectionError },
+        ]);
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleQuickAsk = async (question: string) => {
+    const userMessage = question;
+    setMessages((prev) => [...prev, { role: "user", content: userMessage }]);
+    setInput("");
+    setIsLoading(true);
+
+    try {
+      // 1. Try Puter.js (Client-side Opus 4.6)
+      if ((window as any).puter) {
+        console.log("Attempting to use Puter.js (Opus 4.6)...");
+        const prompt = createTravelPrompt(userMessage, language);
+        const response = await (window as any).puter.ai.chat(prompt, { model: 'claude-opus-4-6' });
+
+        if (response?.message?.content?.[0]?.text) {
+          setMessages((prev) => [...prev, { role: "ai", content: response.message.content[0].text }]);
+          return;
+        }
+      }
+      throw new Error("Puter fallback");
+    } catch (puterError) {
+      console.warn("Puter.js failed, falling back to Server/Groq:", puterError);
+
+      // 2. Fallback to Server API
+      try {
+        const response = await fetch("/api/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: userMessage, language }),
+        });
+        const data = await response.json();
+        if (data.reply) {
+          setMessages((prev) => [...prev, { role: "ai", content: data.reply }]);
+        } else {
+          setMessages((prev) => [...prev, { role: "ai", content: t.aiError }]);
+        }
+      } catch (error) {
         console.error(error);
         setMessages((prev) => [
           ...prev,
           { role: "ai", content: t.aiConnectionError },
         ]);
-      })
-      .finally(() => {
-        setIsLoading(false);
-      });
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {

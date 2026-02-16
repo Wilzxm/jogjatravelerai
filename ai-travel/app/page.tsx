@@ -11,6 +11,7 @@ export default function Home() {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
 
@@ -265,10 +266,31 @@ export default function Home() {
     recognition.start();
   };
 
+  const toggleMobileMenu = () => {
+    setIsMobileMenuOpen(!isMobileMenuOpen);
+  };
+
   return (
     <div className="app-container">
+      {/* Mobile Menu Button */}
+      <button
+        className="mobile-menu-btn"
+        onClick={toggleMobileMenu}
+        aria-label="Toggle Menu"
+      >
+        <i className={`fa-solid ${isMobileMenuOpen ? 'fa-xmark' : 'fa-bars'}`}></i>
+      </button>
+
+      {/* Overlay for mobile */}
+      {isMobileMenuOpen && (
+        <div
+          className="mobile-overlay"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
+
       {/* Sidebar */}
-      <aside className="sidebar glass">
+      <aside className={`sidebar glass ${isMobileMenuOpen ? 'open' : ''}`}>
         <div className="brand-container">
           <div className="brand">Jogja Traveler AI</div>
           <div className="brand-sub">

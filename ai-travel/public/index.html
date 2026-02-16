@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jogja Traveler AI</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<style>
+body{
+margin:0;
+font-family:Inter,sans-serif;
+background:#0b1120;
+color:white;
+display:flex;
+height:100vh;
+}
+
+.sidebar{
+width:260px;
+background:#0f172a;
+padding:20px;
+}
+
+.main{
+flex:1;
+display:flex;
+flex-direction:column;
+padding:30px;
+}
+
+.chat{
+flex:1;
+background:#111827;
+border-radius:16px;
+padding:20px;
+overflow:auto;
+display:flex;
+flex-direction:column;
+gap:12px;
+}
+
+.msg{
+padding:12px 16px;
+border-radius:14px;
+max-width:70%;
+}
+
+.user{
+background:#2563eb;
+align-self:flex-end;
+}
+
+.ai{
+background:#1f2937;
+align-self:flex-start;
+}
+
+.inputArea{
+display:flex;
+gap:10px;
+margin-top:15px;
+}
+
+input{
+flex:1;
+padding:14px;
+border-radius:12px;
+border:none;
+outline:none;
+}
+
+button{
+padding:14px 18px;
+border:none;
+border-radius:12px;
+cursor:pointer;
+font-weight:bold;
+}
+
+.gen{background:#38bdf8;color:white;}
+.map{background:#334155;color:white;}
+</style>
+</head>
+
+<body>
+
+<div class="sidebar">
+<h2>🤖 Jogja AI</h2>
+<p>Solo traveler planner</p>
+</div>
+
+<div class="main">
+<h2>Smart Travel Companion</h2>
+
+<div class="chat" id="chat">
+<div class="msg ai">Halo! Mau liburan berapa hari dan budget berapa?</div>
+</div>
+
+<div class="inputArea">
+<input id="input" placeholder="2 hari jogja 500rb">
+<button class="gen" onclick="kirim()">Generate</button>
+<button class="map" onclick="map()">View Map</button>
+</div>
+</div>
+
+<script>
+function map(){
+window.open("https://maps.google.com/?q=Yogyakarta");
+}
+
+async function kirim(){
+const input=document.getElementById("input");
+const chat=document.getElementById("chat");
+const text=input.value.trim();
+if(!text) return;
+
+chat.innerHTML+=`<div class="msg user">${text}</div>`;
+input.value="";
+chat.scrollTop=chat.scrollHeight;
+
+const loading=document.createElement("div");
+loading.className="msg ai";
+loading.innerHTML="AI mikir...";
+chat.appendChild(loading);
+
+try{
+const res=await fetch("http://localhost:3000/api/chat",{
+method:"POST",
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify({message:text})
+});
+
+const data=await res.json();
+loading.remove();
+
+chat.innerHTML+=`<div class="msg ai">${data.reply}</div>`;
+chat.scrollTop=chat.scrollHeight;
+
+}catch(e){
+loading.innerHTML="Error connect AI";
+console.log(e);
+}
+}
+
+document.getElementById("input").addEventListener("keypress",e=>{
+if(e.key==="Enter") kirim();
+});
+</script>
+
+</body>
+</html>

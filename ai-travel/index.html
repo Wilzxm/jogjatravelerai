@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jogja Traveler AI - Smart Travel Companion</title>
+
+    <!-- Modern Typography -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --primary: #3b82f6;
+            /* Blue */
+            --accent: #10b981;
+            /* AI Green */
+            --text-main: #f8fafc;
+            --text-sec: #94a3b8;
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            outline: none;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg-dark);
+            /* Complex abstract background */
+            background-image:
+                radial-gradient(circle at 15% 50%, rgba(59, 130, 246, 0.08) 0%, transparent 25%),
+                radial-gradient(circle at 85% 30%, rgba(16, 185, 129, 0.08) 0%, transparent 25%);
+            color: var(--text-main);
+            height: 100vh;
+            display: flex;
+            overflow: hidden;
+        }
+
+        /* UTILITIES */
+        .glass {
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .flex-col {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .gap-2 {
+            gap: 0.5rem;
+        }
+
+        .gap-4 {
+            gap: 1rem;
+        }
+
+        /* SIDEBAR */
+        .sidebar {
+            width: 280px;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 32px;
+            border-right: 1px solid var(--glass-border);
+            background: rgba(15, 23, 42, 0.6);
+            z-index: 10;
+            transition: all 0.3s ease;
+        }
+
+        .brand-container {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .brand {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #60a5fa, #34d399);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.5px;
+        }
+
+        .brand-sub {
+            font-size: 0.75rem;
+            color: var(--text-sec);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            line-height: 1.4;
+        }
+
+        .section-title {
+            font-size: 0.75rem;
+            color: var(--text-sec);
+            text-transform: uppercase;
+            margin-bottom: 12px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            opacity: 0.8;
+        }
+
+        .list-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 12px;
+            border-radius: 12px;
+            transition: all 0.2s ease;
+            color: var(--text-main);
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+
+        .list-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+            transform: translateX(4px);
+            color: var(--primary);
+        }
+
+        .list-item i {
+            color: var(--text-sec);
+            width: 20px;
+            text-align: center;
+            transition: color 0.2s;
+        }
+
+        .list-item:hover i {
+            color: var(--primary);
+        }
+
+        /* MAIN AREA */
+        .main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            padding: 30px;
+            gap: 20px;
+            height: 100vh;
+        }
+
+        /* Floating Badge */
+        .badge {
+            position: absolute;
+            top: 24px;
+            right: 32px;
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--accent);
+            padding: 6px 16px;
+            border-radius: 99px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            box-shadow: 0 0 15px rgba(16, 185, 129, 0.15);
+            z-index: 20;
+            animation: float 4s ease-in-out infinite;
+            pointer-events: none;
+        }
+
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-5px);
+            }
+        }
+
+        .header h1 {
+            font-size: 1.8rem;
+            font-weight: 600;
+            margin-bottom: 24px;
+            background: linear-gradient(to right, #fff, #94a3b8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* Mode Buttons */
+        .mode-container {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 8px;
+            flex-wrap: wrap;
+        }
+
+        .mode-btn {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            color: var(--text-sec);
+            padding: 10px 20px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-family: inherit;
+            font-weight: 500;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .mode-btn:hover {
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--text-main);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .mode-btn.active {
+            background: rgba(59, 130, 246, 0.15);
+            border-color: var(--primary);
+            color: var(--primary);
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.2);
+        }
+
+        /* CHAT AREA */
+        .chat-container {
+            flex: 1;
+            border-radius: 20px;
+            padding: 24px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            scroll-behavior: smooth;
+        }
+
+        .msg {
+            max-width: 80%;
+            padding: 16px 20px;
+            border-radius: 18px;
+            font-size: 0.95rem;
+            line-height: 1.6;
+            animation: messageSlide 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            opacity: 0;
+            transform: translateY(20px);
+            position: relative;
+        }
+
+        @keyframes messageSlide {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .msg.ai {
+            align-self: flex-start;
+            background: rgba(30, 41, 59, 0.7);
+            border: 1px solid var(--glass-border);
+            border-bottom-left-radius: 4px;
+            color: #cbd5e1;
+        }
+
+        .msg.user {
+            align-self: flex-end;
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            color: white;
+            border-bottom-right-radius: 4px;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+        }
+
+        /* INPUT AREA */
+        .input-area {
+            display: flex;
+            gap: 12px;
+            background: rgba(15, 23, 42, 0.9);
+            padding: 16px;
+            border-radius: 16px;
+            border: 1px solid var(--glass-border);
+            margin-top: auto;
+        }
+
+        .input-field {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 12px 16px;
+            color: white;
+            font-family: inherit;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+        }
+
+        .input-field:focus {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+        }
+
+        .btn {
+            padding: 0 20px;
+            border-radius: 12px;
+            border: none;
+            cursor: pointer;
+            font-family: inherit;
+            font-weight: 600;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+            height: 46px;
+            /* Match input height roughly */
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #2563eb;
+            transform: translateY(-1px);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: var(--text-sec);
+            border: 1px solid var(--glass-border);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-main);
+            border-color: var(--text-sec);
+        }
+
+        /* RESPONSIVE */
+        @media (max-width: 768px) {
+            body {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                width: 100%;
+                height: auto;
+                flex-direction: row;
+                align-items: center;
+                justify-content: space-between;
+                padding: 16px 20px;
+                border-right: none;
+                border-bottom: 1px solid var(--glass-border);
+            }
+
+            .sidebar .sections-container {
+                display: none;
+            }
+
+            .brand {
+                font-size: 1.2rem;
+            }
+
+            .brand-sub {
+                display: none;
+            }
+
+            /* Hidden on mobile to save space */
+
+            .main {
+                padding: 16px;
+                gap: 16px;
+            }
+
+            .header h1 {
+                font-size: 1.4rem;
+                margin-bottom: 16px;
+                margin-top: 10px;
+            }
+
+            .badge {
+                top: 12px;
+                right: 16px;
+                padding: 4px 12px;
+                font-size: 0.7rem;
+            }
+
+            .chat-container {
+                padding: 16px;
+            }
+
+            .input-area {
+                padding: 12px;
+            }
+
+            .btn span {
+                display: none;
+            }
+
+            .btn {
+                padding: 0 16px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Sidebar -->
+    <aside class="sidebar glass">
+        <div class="brand-container">
+            <div class="brand">Jogja Traveler AI</div>
+            <div class="brand-sub">First-time traveler &<br>Solo Backpacker</div>
+        </div>
+
+        <div class="sections-container flex-col gap-4">
+            <div>
+                <div class="section-title">Popular Spots</div>
+                <div class="flex-col gap-2">
+                    <div class="list-item"><i class="fa-solid fa-store"></i> <span>Jalan Malioboro</span></div>
+                    <div class="list-item"><i class="fa-solid fa-gopuram"></i> <span>Candi Prambanan</span></div>
+                    <div class="list-item"><i class="fa-solid fa-water"></i> <span>Pantai Parangtritis</span></div>
+                </div>
+            </div>
+            <div>
+                <div class="section-title">Estimated Budget</div>
+                <div class="flex-col gap-2">
+                    <div class="list-item"><i class="fa-solid fa-bus-simple"></i> <span>Transport</span></div>
+                    <div class="list-item"><i class="fa-solid fa-ticket"></i> <span>Tiket Masuk</span></div>
+                    <div class="list-item"><i class="fa-solid fa-bowl-food"></i> <span>Makan & Minum</span></div>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main">
+        <div class="badge">
+            <i class="fa-solid fa-rocket" style="margin-right:4px"></i> Prototype v1.0
+        </div>
+
+        <div class="header">
+            <h1>Smart Travel Companion</h1>
+            <div class="mode-container">
+                <button class="mode-btn" onclick="selectMode(this, 'solo')">
+                    <i class="fa-solid fa-person-hiking"></i> Solo
+                </button>
+                <button class="mode-btn" onclick="selectMode(this, 'budget')">
+                    <i class="fa-solid fa-piggy-bank"></i> Budget
+                </button>
+                <button class="mode-btn" onclick="selectMode(this, 'healing')">
+                    <i class="fa-solid fa-spa"></i> Healing
+                </button>
+            </div>
+        </div>
+
+        <div class="chat-container glass" id="chat">
+            <div class="msg ai">
+                Halo! 👋<br>Mau liburan berapa hari dan budget berapa?
+            </div>
+        </div>
+
+        <div class="input-area glass">
+            <input type="text" id="userInput" class="input-field"
+                placeholder="Contoh: 2 hari di Jogja, budget 1 juta..." autocomplete="off">
+            <button class="btn btn-primary" onclick="sendMessage()">
+                <i class="fa-solid fa-paper-plane"></i> <span>Generate</span>
+            </button>
+            <button class="btn btn-secondary" onclick="openMap()">
+                <i class="fa-regular fa-map"></i> <span>View Map</span>
+            </button>
+        </div>
+    </main>
+
+    <script>
+        function openMap() {
+            window.open("https://maps.google.com/?q=Yogyakarta", "_blank");
+        }
+
+        function selectMode(btn, mode) {
+            document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            console.log("Mode:", mode);
+            // Visual feedback only
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById("userInput");
+            const chat = document.getElementById("chat");
+            const text = input.value.trim();
+
+            if (!text) return;
+
+            // Add User Message
+            appendMessage(text, 'user');
+            input.value = '';
+
+            // Add Loading
+            const loadingId = 'loading-' + Date.now();
+            const loadingHTML = `
+                <div id="${loadingId}" class="msg ai" style="display:flex; align-items:center; gap:10px;">
+                    <i class="fa-solid fa-circle-notch fa-spin"></i>
+                    <span>Sedang merencanakan liburanmu...</span>
+                </div>
+            `;
+            chat.insertAdjacentHTML('beforeend', loadingHTML);
+            chat.scrollTop = chat.scrollHeight;
+
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: text })
+                });
+
+                const data = await response.json();
+
+                // Remove loading
+                const loader = document.getElementById(loadingId);
+                if (loader) loader.remove();
+
+                // Add AI Message
+                if (data.reply) {
+                    // Simple formatting: newlines to <br>
+                    const formatted = data.reply.replace(/\n/g, '<br>');
+                    appendMessage(formatted, 'ai');
+                } else {
+                    appendMessage("Maaf, saya tidak mengerti.", 'ai');
+                }
+
+            } catch (err) {
+                console.error(err);
+                const loader = document.getElementById(loadingId);
+                if (loader) loader.remove();
+                appendMessage("Terjadi kesalahan koneksi. Silakan coba lagi.", 'ai');
+            }
+        }
+
+        function appendMessage(html, type) {
+            const chat = document.getElementById("chat");
+            const div = document.createElement("div");
+            div.className = `msg ${type}`;
+            div.innerHTML = html;
+            chat.appendChild(div);
+            chat.scrollTop = chat.scrollHeight;
+        }
+
+        // Enter key support
+        document.getElementById("userInput").addEventListener("keypress", (e) => {
+            if (e.key === "Enter") sendMessage();
+        });
+    </script>
+</body>
+
+</html>

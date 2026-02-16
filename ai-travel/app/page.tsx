@@ -281,7 +281,10 @@ export default function Home() {
         >
           <i className={`fa-solid ${isMobileMenuOpen ? 'fa-xmark' : 'fa-bars'}`}></i>
         </button>
-        <span className="mobile-title">Jogja Traveler AI</span>
+        <span className="mobile-title">Smart Travel Companion</span>
+        <div className="mobile-badge">
+          <i className="fa-solid fa-rocket"></i> <span>v1.0</span>
+        </div>
       </header>
 
       {/* Legacy Mobile Menu Button (Removed) */}

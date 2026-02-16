@@ -34,6 +34,8 @@ body {
     radial-gradient(circle at 85% 30%, rgba(16, 185, 129, 0.08) 0%, transparent 25%);
   color: var(--text-main);
   height: 100vh;
+  /* Fallback */
+  height: 100dvh;
   margin: 0;
   overflow: hidden;
 }
@@ -42,6 +44,8 @@ body {
 .app-container {
   display: flex;
   height: 100vh;
+  /* Fallback */
+  height: 100dvh;
   width: 100%;
   flex-direction: row;
   /* Desktop default */
@@ -163,6 +167,8 @@ body {
   padding: 30px;
   gap: 20px;
   height: 100vh;
+  /* Fallback */
+  height: 100dvh;
 }
 
 /* Floating Badge */
@@ -388,7 +394,11 @@ body {
     top: 0;
     left: 0;
     width: 280px;
+    max-width: 85vw;
+    /* Prevent covering full width on small screens */
     height: 100vh;
+    /* Fallback */
+    height: 100dvh;
     transform: translateX(-100%);
     background: rgba(15, 23, 42, 0.95);
     backdrop-filter: blur(20px);

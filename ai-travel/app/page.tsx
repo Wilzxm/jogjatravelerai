@@ -331,8 +331,6 @@ export default function Home() {
             </button>
           </div>
         </div>
-          </button>
-        </div>
 
         <div className="sections-container flex-col gap-4">
           <div>
@@ -382,8 +380,8 @@ export default function Home() {
         </div>
       </aside >
 
-    {/* Main Content */ }
-    < main className = "main" >
+      {/* Main Content */}
+      < main className="main" >
         <div className="badge">
           <i className="fa-solid fa-rocket" style={{ marginRight: "4px" }}></i> {t.prototype}
         </div>

@@ -158,6 +158,40 @@ body {
   color: var(--primary);
 }
 
+/* Language Switcher (Segmented Control) */
+.lang-switcher {
+  display: flex;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 50px;
+  padding: 4px;
+  width: 100%;
+  max-width: 200px;
+}
+
+.lang-btn {
+  flex: 1;
+  background: transparent;
+  color: var(--text-sec);
+  border: none;
+  padding: 6px 12px;
+  border-radius: 50px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.lang-btn:hover {
+  color: var(--text-main);
+}
+
+.lang-btn.active {
+  background: var(--primary);
+  color: white;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
+}
+
 /* MAIN AREA */
 .main {
   flex: 1;

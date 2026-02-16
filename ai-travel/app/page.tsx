@@ -308,29 +308,29 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Language Switcher */}
-        <div className="flex gap-2 justify-center my-4">
-          <button
-            onClick={() => setLanguage('id')}
-            className={`px-3 py-1 rounded-full text-xs font-bold transition-colors ${language === 'id' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
-            style={{ backgroundColor: language === 'id' ? 'rgba(56, 189, 248, 0.8)' : 'rgba(255, 255, 255, 0.2)', color: language === 'id' ? 'white' : 'rgba(255, 255, 255, 0.7)' }}
-          >
-            ID
-          </button>
-          <button
-            onClick={() => setLanguage('en')}
-            className={`px-3 py-1 rounded-full text-xs font-bold transition-colors ${language === 'en' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
-            style={{ backgroundColor: language === 'en' ? 'rgba(56, 189, 248, 0.8)' : 'rgba(255, 255, 255, 0.2)', color: language === 'en' ? 'white' : 'rgba(255, 255, 255, 0.7)' }}
-
-          >
-            EN
-          </button>
-          <button
-            onClick={() => setLanguage('jv')}
-            className={`px-3 py-1 rounded-full text-xs font-bold transition-colors ${language === 'jv' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
-            style={{ backgroundColor: language === 'jv' ? 'rgba(56, 189, 248, 0.8)' : 'rgba(255, 255, 255, 0.2)', color: language === 'jv' ? 'white' : 'rgba(255, 255, 255, 0.7)' }}
-          >
-            JV
+        {/* Language Switcher (Segmented Control) */}
+        <div className="flex justify-center my-4">
+          <div className="lang-switcher glass">
+            <button
+              onClick={() => setLanguage('id')}
+              className={`lang-btn ${language === 'id' ? 'active' : ''}`}
+            >
+              ID
+            </button>
+            <button
+              onClick={() => setLanguage('en')}
+              className={`lang-btn ${language === 'en' ? 'active' : ''}`}
+            >
+              EN
+            </button>
+            <button
+              onClick={() => setLanguage('jv')}
+              className={`lang-btn ${language === 'jv' ? 'active' : ''}`}
+            >
+              JV
+            </button>
+          </div>
+        </div>
           </button>
         </div>
 
@@ -380,10 +380,10 @@ export default function Home() {
             </div>
           </div>
         </div>
-      </aside>
+      </aside >
 
-      {/* Main Content */}
-      <main className="main">
+    {/* Main Content */ }
+    < main className = "main" >
         <div className="badge">
           <i className="fa-solid fa-rocket" style={{ marginRight: "4px" }}></i> {t.prototype}
         </div>
@@ -437,7 +437,7 @@ export default function Home() {
             <i className="fa-regular fa-map"></i> <span>{t.viewMap}</span>
           </button>
         </div>
-      </main>
-    </div>
+      </main >
+    </div >
   );
 }

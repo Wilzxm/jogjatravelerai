@@ -2,12 +2,26 @@
 
 import { useState, useRef, useEffect } from "react";
 import ReactMarkdown from "react-markdown";
+import { useSession, signOut, signIn } from "next-auth/react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+
+interface Window {
+  puter: any;
+  SpeechRecognition: any;
+  webkitSpeechRecognition: any;
+}
 
 export default function Home() {
+  const { data: session } = useSession();
+  const queryClient = useQueryClient();
   const [language, setLanguage] = useState<"id" | "en" | "jv">("id");
-  const [messages, setMessages] = useState<{ role: "ai" | "user"; content: string }[]>([
+  const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
+
+  // Local state for optimistic updates and guest mode
+  const [localMessages, setLocalMessages] = useState<{ role: "ai" | "user"; content: string }[]>([
     { role: "ai", content: "Halo! 👋\nMau liburan berapa hari dan budget berapa?" },
   ]);
+
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
@@ -39,6 +53,11 @@ export default function Home() {
       aiConnectionError: "Terjadi kesalahan koneksi. Silakan coba lagi.",
       aiProcessing: "Sedang merencanakan liburanmu...",
       listening: "Mendengarkan...",
+      login: "Masuk Akun",
+      logout: "Keluar",
+      history: "Riwayat Chat",
+      newChat: "Chat Baru",
+      startChat: "Mulai Chat Baru"
     },
     en: {
       brandSub: "First-time traveler &\nSolo Backpacker",
@@ -63,6 +82,11 @@ export default function Home() {
       aiConnectionError: "Connection error occurred. Please try again.",
       aiProcessing: "Planning your holiday...",
       listening: "Listening...",
+      login: "Login",
+      logout: "Logout",
+      history: "Chat History",
+      newChat: "New Chat",
+      startChat: "Start New Chat"
     },
     jv: {
       brandSub: "Pelancong Pemula &\nSolo Backpacker",
@@ -87,72 +111,93 @@ export default function Home() {
       aiConnectionError: "Wonten masalah koneksi. Cobi malih.",
       aiProcessing: "Sekedap, tak gaweke rencana...",
       listening: "Ngrungokke...",
+      login: "Mlebu",
+      logout: "Metu",
+      history: "Riwayat Chat",
+      newChat: "Chat Anyar",
+      startChat: "Mulai Chat Anyar"
     },
   };
 
   const t = translations[language];
 
-  // Update initial message when language changes (optional, but good for UX if user hasn't chatted yet)
+  // Fetch Chat History
+  const { data: chats, refetch: refetchChats } = useQuery({
+    queryKey: ['chats'],
+    queryFn: async () => {
+      const res = await fetch('/api/chats');
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: !!session,
+  });
+
+  // Fetch Messages for Selected Chat
+  const { data: chatData, refetch: refetchMessages } = useQuery({
+    queryKey: ['chat', selectedChatId],
+    queryFn: async () => {
+      if (!selectedChatId) return null;
+      const res = await fetch(`/api/chats/${selectedChatId}`);
+      if (!res.ok) throw new Error("Failed to load chat");
+      return res.json();
+    },
+    enabled: !!selectedChatId,
+  });
+
+  // Create New Chat Mutation
+  const createChatMutation = useMutation({
+    mutationFn: async (title?: string) => {
+      const res = await fetch('/api/chats', { method: 'POST', body: JSON.stringify({ title }) });
+      return res.json();
+    },
+    onSuccess: (newChat) => {
+      queryClient.invalidateQueries({ queryKey: ['chats'] });
+      setSelectedChatId(newChat.id);
+      setLocalMessages([{ role: "ai", content: t.aiGreeting }]); // Reset UI for new chat
+    },
+  });
+
+  // Save Message Mutation
+  const saveMessageMutation = useMutation({
+    mutationFn: async ({ chatId, role, content }: { chatId: string, role: string, content: string }) => {
+      await fetch('/api/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chatId, role, content }),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['chats'] }); // Update last active
+    }
+  });
+
+  // Sync remote messages to local state
   useEffect(() => {
-    if (messages.length === 1 && messages[0].role === 'ai') {
-      setMessages([{ role: "ai", content: t.aiGreeting }]);
+    if (chatData?.messages) {
+      setLocalMessages(chatData.messages.map((m: any) => ({ role: m.role, content: m.content })));
+    } else if (selectedChatId === null && !isLoading) {
+      // Only reset if we explicitly switched to "New Chat" (null ID) and aren't waiting for a create
+      // If we just loaded the page as guest, we keep the default greeting
+      if (session && messages.length > 1) {
+        setLocalMessages([{ role: "ai", content: t.aiGreeting }]);
+      }
     }
-  }, [language]);
+  }, [chatData, selectedChatId]);
 
+  // Ensure we have a chat ID when user starts typing (if logged in)
+  const ensureChatExists = async () => {
+    if (!session) return null;
+    if (selectedChatId) return selectedChatId;
 
-  const popularSpots = [
-    {
-      name: "Jalan Malioboro",
-      icon: "fa-store",
-      url: "https://maps.app.goo.gl/rqc2ZU4ktaXjVRTb7",
-      hours: {
-        id: "Buka 24 Jam (Toko: 09.00 - 21.00)",
-        en: "Open 24 Hours (Shops: 09:00 - 21:00)",
-        jv: "Buka 24 Jam (Toko: 09.00 - 21.00)",
-      },
-    },
-    {
-      name: "Candi Prambanan",
-      icon: "fa-gopuram",
-      url: "https://www.google.com/maps/search/?api=1&query=Candi+Prambanan",
-      hours: {
-        id: "06.30 - 17.00 WIB",
-        en: "06:30 AM - 05:00 PM",
-        jv: "06.30 - 17.00 WIB",
-      },
-    },
-    {
-      name: "Pantai Parangtritis",
-      icon: "fa-water",
-      url: "https://www.google.com/maps/search/?api=1&query=Pantai+Parangtritis",
-      hours: {
-        id: "Buka 24 Jam",
-        en: "Open 24 Hours",
-        jv: "Buka 24 Jam",
-      },
-    },
-  ];
-
-  const scrollToBottom = () => {
-    if (chatContainerRef.current) {
-      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
-    }
+    const newChat = await createChatMutation.mutateAsync();
+    return newChat.id;
   };
 
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages, isLoading]);
-
-  // Add Puter type definition
-  const openMap = () => {
-    window.open("https://maps.google.com/?q=Yogyakarta", "_blank");
+  const handleNewChat = () => {
+    setSelectedChatId(null);
+    setLocalMessages([{ role: "ai", content: t.aiGreeting }]);
+    if (isMobileMenuOpen) setIsMobileMenuOpen(false);
   };
-
-  interface Window {
-    puter: any;
-    SpeechRecognition: any;
-    webkitSpeechRecognition: any;
-  }
 
   const createTravelPrompt = (message: string, language: string) => {
     let languageInstruction = "";
@@ -217,9 +262,25 @@ ATURAN PENTING:
     if (!input.trim()) return;
 
     const userMessage = input.trim();
-    setMessages((prev) => [...prev, { role: "user", content: userMessage }]);
+    // Optimistic update
+    setLocalMessages((prev) => [...prev, { role: "user", content: userMessage }]);
     setInput("");
     setIsLoading(true);
+
+    // Ensure chat ID exists if logged in
+    let currentChatId = selectedChatId;
+    if (session && !currentChatId) {
+      try {
+        currentChatId = await ensureChatExists();
+      } catch (e) {
+        console.error("Failed to create chat", e);
+      }
+    }
+
+    // Save User Message to DB
+    if (session && currentChatId) {
+      saveMessageMutation.mutate({ chatId: currentChatId, role: 'user', content: userMessage });
+    }
 
     try {
       // 1. Try Puter.js (Client-side Opus 4.6)
@@ -229,7 +290,12 @@ ATURAN PENTING:
         const response = await (window as any).puter.ai.chat(prompt, { model: 'claude-opus-4-6' });
 
         if (response?.message?.content?.[0]?.text) {
-          setMessages((prev) => [...prev, { role: "ai", content: response.message.content[0].text }]);
+          const aiReply = response.message.content[0].text;
+          setLocalMessages((prev) => [...prev, { role: "ai", content: aiReply }]);
+
+          if (session && currentChatId) {
+            saveMessageMutation.mutate({ chatId: currentChatId, role: 'ai', content: aiReply });
+          }
           return; // Success! Exit function.
         }
       } else {
@@ -251,13 +317,16 @@ ATURAN PENTING:
         const data = await response.json();
 
         if (data.reply) {
-          setMessages((prev) => [...prev, { role: "ai", content: data.reply }]);
+          setLocalMessages((prev) => [...prev, { role: "ai", content: data.reply }]);
+          if (session && currentChatId) {
+            saveMessageMutation.mutate({ chatId: currentChatId, role: 'ai', content: data.reply });
+          }
         } else {
-          setMessages((prev) => [...prev, { role: "ai", content: t.aiError }]);
+          setLocalMessages((prev) => [...prev, { role: "ai", content: t.aiError }]);
         }
       } catch (error) {
         console.error("Server API Error:", error);
-        setMessages((prev) => [
+        setLocalMessages((prev) => [
           ...prev,
           { role: "ai", content: t.aiConnectionError },
         ]);
@@ -268,28 +337,39 @@ ATURAN PENTING:
   };
 
   const handleQuickAsk = async (question: string) => {
+    // Use logic similar to handleSendMessage but simply calling it is hard due to input state
+    // So we replicate logic or refactor. Replicating for speed as logic is slightly different (no input clear)
+
     const userMessage = question;
-    setMessages((prev) => [...prev, { role: "user", content: userMessage }]);
-    setInput("");
+    setLocalMessages((prev) => [...prev, { role: "user", content: userMessage }]);
     setIsLoading(true);
 
+    // Ensure chat ID exists if logged in
+    let currentChatId = selectedChatId;
+    if (session && !currentChatId) {
+      try {
+        currentChatId = await ensureChatExists();
+      } catch (e) { console.error(e); }
+    }
+
+    if (session && currentChatId) {
+      saveMessageMutation.mutate({ chatId: currentChatId, role: 'user', content: userMessage });
+    }
+
     try {
-      // 1. Try Puter.js (Client-side Opus 4.6)
       if ((window as any).puter) {
-        console.log("Attempting to use Puter.js (Opus 4.6)...");
         const prompt = createTravelPrompt(userMessage, language);
         const response = await (window as any).puter.ai.chat(prompt, { model: 'claude-opus-4-6' });
-
         if (response?.message?.content?.[0]?.text) {
-          setMessages((prev) => [...prev, { role: "ai", content: response.message.content[0].text }]);
+          const aiReply = response.message.content[0].text;
+          setLocalMessages((prev) => [...prev, { role: "ai", content: aiReply }]);
+          if (session && currentChatId) saveMessageMutation.mutate({ chatId: currentChatId, role: 'ai', content: aiReply });
           return;
         }
       }
       throw new Error("Puter fallback");
-    } catch (puterError) {
-      console.warn("Puter.js failed, falling back to Server/Groq:", puterError);
-
-      // 2. Fallback to Server API
+    } catch (e) {
+      // Fallback to Groq
       try {
         const response = await fetch("/api/chat", {
           method: "POST",
@@ -298,16 +378,13 @@ ATURAN PENTING:
         });
         const data = await response.json();
         if (data.reply) {
-          setMessages((prev) => [...prev, { role: "ai", content: data.reply }]);
+          setLocalMessages((prev) => [...prev, { role: "ai", content: data.reply }]);
+          if (session && currentChatId) saveMessageMutation.mutate({ chatId: currentChatId, role: 'ai', content: data.reply });
         } else {
-          setMessages((prev) => [...prev, { role: "ai", content: t.aiError }]);
+          setLocalMessages((prev) => [...prev, { role: "ai", content: t.aiError }]);
         }
-      } catch (error) {
-        console.error(error);
-        setMessages((prev) => [
-          ...prev,
-          { role: "ai", content: t.aiConnectionError },
-        ]);
+      } catch (err) {
+        setLocalMessages((prev) => [...prev, { role: "ai", content: t.aiConnectionError }]);
       }
     } finally {
       setIsLoading(false);
@@ -330,7 +407,6 @@ ATURAN PENTING:
     }
 
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-
     if (!SpeechRecognition) {
       alert("Browser anda tidak mendukung fitur Voice Note. Silakan gunakan Chrome atau Edge.");
       return;
@@ -338,50 +414,63 @@ ATURAN PENTING:
 
     const recognition = new SpeechRecognition();
     recognitionRef.current = recognition;
-
     recognition.continuous = false;
     recognition.interimResults = false;
 
-    // Set language based on selected language
-    // Fallback for Javanese to Indonesian if browser doesn't strictly support 'jv' (though 'jv-ID' exists in some)
     if (language === 'id') recognition.lang = 'id-ID';
     else if (language === 'en') recognition.lang = 'en-US';
-    else if (language === 'jv') recognition.lang = 'jv-ID'; // Attempt Javanese
+    else if (language === 'jv') recognition.lang = 'jv-ID';
 
-    recognition.onstart = () => {
-      setIsRecording(true);
-    };
-
-    recognition.onresult = (event: any) => {
-      const transcript = event.results[0][0].transcript;
-      setInput(transcript);
-    };
-
-    recognition.onerror = (event: any) => {
-      console.error("Speech recognition error", event.error);
-      setIsRecording(false);
-    };
-
-    recognition.onend = () => {
-      setIsRecording(false);
-    };
-
+    recognition.onstart = () => setIsRecording(true);
+    recognition.onresult = (event: any) => setInput(event.results[0][0].transcript);
+    recognition.onerror = (event: any) => { console.error(event.error); setIsRecording(false); };
+    recognition.onend = () => setIsRecording(false);
     recognition.start();
   };
 
-  const toggleMobileMenu = () => {
-    setIsMobileMenuOpen(!isMobileMenuOpen);
+  const toggleMobileMenu = () => setIsMobileMenuOpen(!isMobileMenuOpen);
+
+  const openMap = () => {
+    window.open("https://maps.google.com/?q=Yogyakarta", "_blank");
   };
+
+  const popularSpots = [
+    {
+      name: "Jalan Malioboro",
+      icon: "fa-store",
+      url: "https://maps.app.goo.gl/rqc2ZU4ktaXjVRTb7",
+      hours: { id: "Buka 24 Jam", en: "Open 24 Hours", jv: "Buka 24 Jam" },
+    },
+    {
+      name: "Candi Prambanan",
+      icon: "fa-gopuram",
+      url: "https://www.google.com/maps/search/?api=1&query=Candi+Prambanan",
+      hours: { id: "06.30 - 17.00 WIB", en: "06:30 AM - 05:00 PM", jv: "06.30 - 17.00 WIB" },
+    },
+    {
+      name: "Pantai Parangtritis",
+      icon: "fa-water",
+      url: "https://www.google.com/maps/search/?api=1&query=Pantai+Parangtritis",
+      hours: { id: "Buka 24 Jam", en: "Open 24 Hours", jv: "Buka 24 Jam" },
+    },
+  ];
+
+  const scrollToBottom = () => {
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+    }
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [localMessages, isLoading]);
+
 
   return (
     <div className="app-container">
-      {/* Mobile Header (ChatGPT Style) */}
+      {/* Mobile Header */}
       <header className="mobile-header glass">
-        <button
-          className="icon-btn"
-          onClick={toggleMobileMenu}
-          aria-label="Toggle Menu"
-        >
+        <button className="icon-btn" onClick={toggleMobileMenu} aria-label="Toggle Menu">
           <i className={`fa-solid ${isMobileMenuOpen ? 'fa-xmark' : 'fa-bars'}`}></i>
         </button>
         <span className="mobile-title">Smart Travel Companion</span>
@@ -390,123 +479,108 @@ ATURAN PENTING:
         </div>
       </header>
 
-      {/* Legacy Mobile Menu Button (Removed) */}
-
-      {/* Overlay for mobile */}
-      {isMobileMenuOpen && (
-        <div
-          className="mobile-overlay"
-          onClick={() => setIsMobileMenuOpen(false)}
-        />
-      )}
+      {/* Overlay */}
+      {isMobileMenuOpen && (<div className="mobile-overlay" onClick={() => setIsMobileMenuOpen(false)} />)}
 
       {/* Sidebar */}
-      <aside className={`sidebar glass ${isMobileMenuOpen ? 'open' : ''}`}>
+      <aside className={`sidebar glass ${isMobileMenuOpen ? 'open' : ''}`} style={{ display: 'flex', flexDirection: 'column' }}>
         <div className="brand-container">
           <div className="brand">Jogja Traveler AI</div>
           <div className="brand-sub">
-            {t.brandSub.split('\n').map((line, i) => (
-              <span key={i}>{line}<br /></span>
-            ))}
+            {t.brandSub.split('\n').map((line, i) => (<span key={i}>{line}<br /></span>))}
           </div>
         </div>
 
-        {/* Language Switcher (Segmented Control) */}
-        <div className="flex justify-center my-4">
-          <div className="lang-switcher glass">
+        {/* Auth Section */}
+        <div className="p-4 border-b border-gray-700/50">
+          {session ? (
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center gap-2 text-sm text-gray-300">
+                <i className="fa-solid fa-user-circle"></i>
+                <span className="truncate">{session.user?.name || session.user?.email}</span>
+              </div>
+              <button onClick={() => signOut()} className="text-xs text-red-400 hover:text-red-300 flex items-center gap-1">
+                <i className="fa-solid fa-sign-out-alt"></i> {t.logout}
+              </button>
+            </div>
+          ) : (
             <button
-              onClick={() => setLanguage('id')}
-              className={`lang-btn ${language === 'id' ? 'active' : ''}`}
+              onClick={() => signIn()}
+              className="w-full py-2 bg-blue-600/80 hover:bg-blue-600 rounded-lg text-sm font-medium transition-colors"
             >
-              ID
+              <i className="fa-solid fa-sign-in-alt mr-2"></i> {t.login}
             </button>
-            <button
-              onClick={() => setLanguage('en')}
-              className={`lang-btn ${language === 'en' ? 'active' : ''}`}
-            >
-              EN
-            </button>
-            <button
-              onClick={() => setLanguage('jv')}
-              className={`lang-btn ${language === 'jv' ? 'active' : ''}`}
-            >
-              JV
-            </button>
-          </div>
+          )}
         </div>
 
-        <div className="sections-container flex-col gap-4">
-          <div>
+        {/* Chat History Section (Scrollable) */}
+        <div className="flex-1 overflow-y-auto px-4 py-2 custom-scrollbar">
+          {session && (
+            <>
+              <div className="section-title mt-2">{t.history}</div>
+              <button
+                onClick={handleNewChat}
+                className="w-full flex items-center gap-2 py-2 px-3 mb-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors text-sm text-left"
+              >
+                <i className="fa-solid fa-plus text-green-400"></i> {t.newChat}
+              </button>
+
+              <div className="flex flex-col gap-1">
+                {chats?.map((chat: any) => (
+                  <button
+                    key={chat.id}
+                    onClick={() => { setSelectedChatId(chat.id); setIsMobileMenuOpen(false); }}
+                    className={`w-full text-left py-2 px-3 rounded-lg text-xs truncate transition-colors ${selectedChatId === chat.id ? 'bg-white/20' : 'hover:bg-white/5'}`}
+                  >
+                    <i className="fa-regular fa-message mr-2 opacity-70"></i>
+                    {chat.title}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+
+          {/* Standard Sidebar Content */}
+          <div className="mt-6">
             <div className="section-title">{t.popularSpots}</div>
             <div className="flex-col gap-2">
               {popularSpots.map((spot, index) => (
                 <div key={index} className="flex flex-col gap-1">
-                  <a
-                    href={spot.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="list-item"
-                  >
+                  <a href={spot.url} target="_blank" rel="noopener noreferrer" className="list-item">
                     <i className={`fa-solid ${spot.icon}`}></i> <span>{spot.name}</span>
                   </a>
-                  {/* Opening Hours Display */}
-                  <div className="text-[10px] text-gray-300 pl-8 opacity-80" style={{ fontSize: '0.75rem', paddingLeft: '2rem', color: 'rgba(255,255,255,0.7)' }}>
-                    <i className="fa-regular fa-clock mr-1" style={{ fontSize: '0.7rem' }}></i> {spot.hours[language]}
-                  </div>
                 </div>
               ))}
             </div>
           </div>
-          <div>
-            <div className="section-title">{t.estimatedBudget}</div>
-            <div className="flex-col gap-2">
-              <div
-                className="list-item"
-                onClick={() => handleQuickAsk(t.transportQuery)}
-              >
-                <i className="fa-solid fa-bus-simple"></i> <span>{t.transport}</span>
-              </div>
-              <div
-                className="list-item"
-                onClick={() => handleQuickAsk(t.ticketQuery)}
-              >
-                <i className="fa-solid fa-ticket"></i> <span>{t.tickets}</span>
-              </div>
-              <div
-                className="list-item"
-                onClick={() => handleQuickAsk(t.foodQuery)}
-              >
-                <i className="fa-solid fa-bowl-food"></i> <span>{t.food}</span>
-              </div>
-            </div>
+        </div>
+
+        {/* Language Switcher (Bottom) */}
+        <div className="p-4 border-t border-gray-700/50">
+          <div className="lang-switcher glass w-full">
+            {['id', 'en', 'jv'].map((lang) => (
+              <button key={lang} onClick={() => setLanguage(lang as any)} className={`lang-btn ${language === lang ? 'active' : ''}`}>
+                {lang.toUpperCase()}
+              </button>
+            ))}
           </div>
         </div>
-      </aside >
+      </aside>
 
-      {/* Main Content */}
-      < main className="main" >
-        <div className="badge">
-          <i className="fa-solid fa-rocket" style={{ marginRight: "4px" }}></i> {t.prototype}
-        </div>
-
-        <div className="header">
-          <h1>{t.header}</h1>
-        </div>
+      <main className="main">
+        <div className="badge"><i className="fa-solid fa-rocket mr-1"></i> {t.prototype}</div>
+        <div className="header"><h1>{t.header}</h1></div>
 
         <div className="chat-container glass" id="chat" ref={chatContainerRef}>
-          {messages.map((msg, index) => (
+          {localMessages.map((msg, index) => (
             <div key={index} className={`msg ${msg.role}`}>
-              <ReactMarkdown
-                components={{
-                  a: ({ node, ...props }) => <a {...props} target="_blank" rel="noopener noreferrer" style={{ color: '#38bdf8', textDecoration: 'underline' }} />
-                }}
-              >
+              <ReactMarkdown components={{ a: ({ node, ...props }) => <a {...props} target="_blank" rel="noopener noreferrer" style={{ color: '#38bdf8', textDecoration: 'underline' }} /> }}>
                 {msg.content}
               </ReactMarkdown>
             </div>
           ))}
           {isLoading && (
-            <div className="msg ai" style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <div className="msg ai flex items-center gap-2">
               <i className="fa-solid fa-circle-notch fa-spin"></i>
               <span>{t.aiProcessing}</span>
             </div>
@@ -515,20 +589,10 @@ ATURAN PENTING:
 
         <div className="input-area glass">
           <input
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyPress={handleKeyPress}
-            className="input-field"
-            placeholder={isRecording ? t.listening : t.inputPlaceholder}
-            autoComplete="off"
-            suppressHydrationWarning
+            type="text" value={input} onChange={(e) => setInput(e.target.value)} onKeyPress={handleKeyPress}
+            className="input-field" placeholder={isRecording ? t.listening : t.inputPlaceholder} autoComplete="off"
           />
-          <button
-            className={`btn ${isRecording ? 'btn-recording' : 'btn-secondary'}`}
-            onClick={toggleRecording}
-            title="Voice Note"
-          >
+          <button className={`btn ${isRecording ? 'btn-recording' : 'btn-secondary'}`} onClick={toggleRecording}>
             <i className={`fa-solid ${isRecording ? 'fa-microphone-slash' : 'fa-microphone'}`}></i>
           </button>
           <button className="btn btn-primary" onClick={handleSendMessage}>
@@ -538,7 +602,7 @@ ATURAN PENTING:
             <i className="fa-regular fa-map"></i> <span>{t.viewMap}</span>
           </button>
         </div>
-      </main >
-    </div >
+      </main>
+    </div>
   );
 }

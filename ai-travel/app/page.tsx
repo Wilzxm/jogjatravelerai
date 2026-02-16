@@ -282,14 +282,6 @@ export default function Home() {
           <i className={`fa-solid ${isMobileMenuOpen ? 'fa-xmark' : 'fa-bars'}`}></i>
         </button>
         <span className="mobile-title">Jogja Traveler AI</span>
-        <button
-          className="icon-btn"
-          onClick={openMap}
-          aria-label="View Map"
-          title={t.viewMap}
-        >
-          <i className="fa-regular fa-map"></i>
-        </button>
       </header>
 
       {/* Legacy Mobile Menu Button (Removed) */}
@@ -438,7 +430,7 @@ export default function Home() {
           <button className="btn btn-primary" onClick={handleSendMessage}>
             <i className="fa-solid fa-paper-plane"></i> <span>{t.generate}</span>
           </button>
-          <button className="btn btn-secondary desktop-only" onClick={openMap}>
+          <button className="btn btn-secondary" onClick={openMap}>
             <i className="fa-regular fa-map"></i> <span>{t.viewMap}</span>
           </button>
         </div>

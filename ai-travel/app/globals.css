@@ -480,6 +480,9 @@ body {
     padding: 10px 16px;
     font-size: 0.95rem;
     height: 44px;
+    min-width: 0;
+    /* Allow shrinking */
+    flex: 1;
   }
 
   /* Circular Action Buttons */
@@ -498,10 +501,10 @@ body {
     display: none;
   }
 
-  /* Hide Desktop-only button on mobile */
-  .desktop-only {
+  /* Hide Desktop-only button on mobile - REMOVED since we want Map button */
+  /* .desktop-only {
     display: none;
-  }
+  } */
 
   /* Sidebar (Off-canvas) */
   .sidebar {
@@ -704,10 +707,16 @@ body {
 }
 
 .input-area {
-  padding: 12px;
-  flex-wrap: wrap;
-  /* Allow wrapping on very small screens if needed, though hidden on mobile */
+  padding: 12px 16px;
   gap: 8px;
+  background: rgba(15, 23, 42, 0.98);
+  border-top: 1px solid var(--glass-border);
+  border-radius: 0;
+  /* Full width bar */
+  margin-top: auto;
+  align-items: center;
+  flex-wrap: nowrap !important;
+  /* Force single row */
 }
 
 .btn span {

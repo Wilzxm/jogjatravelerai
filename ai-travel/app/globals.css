@@ -452,10 +452,7 @@ body {
     /* Hide big header on mobile */
   }
 
-  .badge {
-    display: none;
-    /* Hide badge on mobile to clean up */
-  }
+  /* .badge removed to show it on mobile */
 
   /* Chat Container */
   .chat-container {
@@ -567,168 +564,169 @@ body {
       opacity: 1;
     }
   }
-}
 
-/* Mobile Sidebar (Off-canvas) */
-.sidebar {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 280px;
-  max-width: 85vw;
-  /* Prevent covering full width on small screens */
-  height: 100vh;
-  /* Fallback */
-  height: 100dvh;
-  transform: translateX(-100%);
-  background: rgba(15, 23, 42, 0.95);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  z-index: 100;
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  border-right: 1px solid var(--glass-border);
-  border-bottom: none;
-  padding-top: 80px;
-  /* Space for close button if needed, or consistent spacing */
-  flex-direction: column;
-  justify-content: flex-start;
-  align-items: stretch;
-}
+  /* Re-integrated into the main media query block */
 
-.sidebar.open {
-  transform: translateX(0);
-  box-shadow: 10px 0 30px rgba(0, 0, 0, 0.5);
-}
-
-.sidebar .sections-container {
-  display: flex;
-  /* Show sections on mobile menu */
-  overflow-y: auto;
-}
-
-/* Mobile Menu Button */
-.mobile-menu-btn {
-  position: fixed;
-  top: 20px;
-  left: 20px;
-  z-index: 110;
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
-  background: rgba(15, 23, 42, 0.8);
-  border: 1px solid var(--glass-border);
-  color: white;
-  font-size: 1.2rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  backdrop-filter: blur(8px);
-  transition: all 0.2s ease;
-}
-
-.mobile-menu-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
-}
-
-/* Overlay */
-.mobile-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(4px);
-  z-index: 90;
-  animation: fadeIn 0.3s ease;
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
+  /* Mobile Sidebar (Off-canvas) */
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 280px;
+    max-width: 85vw;
+    /* Prevent covering full width on small screens */
+    height: 100vh;
+    /* Fallback */
+    height: 100dvh;
+    transform: translateX(-100%);
+    background: rgba(15, 23, 42, 0.95);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    z-index: 100;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border-right: 1px solid var(--glass-border);
+    border-bottom: none;
+    padding-top: 80px;
+    /* Space for close button if needed, or consistent spacing */
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: stretch;
   }
 
-  to {
-    opacity: 1;
+  .sidebar.open {
+    transform: translateX(0);
+    box-shadow: 10px 0 30px rgba(0, 0, 0, 0.5);
   }
-}
 
-.brand-container {
-  margin-bottom: 20px;
-  padding-left: 10px;
-  /* Additional padding since alignment changed */
-}
+  .sidebar .sections-container {
+    display: flex;
+    /* Show sections on mobile menu */
+    overflow-y: auto;
+  }
 
-.brand {
-  font-size: 1.5rem;
-}
+  /* Mobile Menu Button */
+  .mobile-menu-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    z-index: 110;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: rgba(15, 23, 42, 0.8);
+    border: 1px solid var(--glass-border);
+    color: white;
+    font-size: 1.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    backdrop-filter: blur(8px);
+    transition: all 0.2s ease;
+  }
 
-.brand-sub {
-  display: block;
-  /* Show sub-brand on mobile menu */
-  margin-bottom: 0;
-}
+  .mobile-menu-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+  }
 
-.main {
-  padding: 16px;
-  padding-top: 80px;
-  /* Space for header/button */
-  gap: 16px;
-}
+  /* Overlay */
+  .mobile-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    z-index: 90;
+    animation: fadeIn 0.3s ease;
+  }
 
-.header h1 {
-  font-size: 1.4rem;
-  margin-bottom: 16px;
-  margin-top: 0;
-  text-align: center;
-}
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
 
-.badge {
-  top: 24px;
-  right: 20px;
-  padding: 4px 12px;
-  font-size: 0.7rem;
-  z-index: 80;
-  /* Below overlay */
-}
+    to {
+      opacity: 1;
+    }
+  }
 
-.chat-container {
-  padding: 16px;
-}
+  .brand-container {
+    margin-bottom: 20px;
+    padding-left: 10px;
+    /* Additional padding since alignment changed */
+  }
 
-.input-area {
-  padding: 12px 16px;
-  gap: 8px;
-  background: rgba(15, 23, 42, 0.98);
-  border-top: 1px solid var(--glass-border);
-  border-radius: 0;
-  /* Full width bar */
-  margin-top: auto;
-  align-items: center;
-  flex-wrap: nowrap !important;
-  /* Force single row */
-}
+  .brand {
+    font-size: 1.5rem;
+  }
 
-.btn span {
-  display: none;
-}
+  .brand-sub {
+    display: block;
+    /* Show sub-brand on mobile menu */
+    margin-bottom: 0;
+  }
 
-.btn {
-  padding: 0 12px;
-  flex: 0 0 auto;
-}
+  .main {
+    padding: 16px;
+    padding-top: 80px;
+    /* Space for header/button */
+    gap: 16px;
+  }
 
-/* Hide desktop-only elements inside mobile menu if necessary */
+  .header h1 {
+    font-size: 1.4rem;
+    margin-bottom: 16px;
+    margin-top: 0;
+    text-align: center;
+  }
 
-/* Mobile Chat Bubble Adjustments */
-@media (max-width: 768px) {
+  .badge {
+    top: 24px;
+    right: 20px;
+    padding: 4px 12px;
+    font-size: 0.7rem;
+    z-index: 80;
+    /* Below overlay */
+  }
+
+  .chat-container {
+    padding: 16px;
+  }
+
+  .input-area {
+    padding: 12px 16px;
+    gap: 8px;
+    background: rgba(15, 23, 42, 0.98);
+    border-top: 1px solid var(--glass-border);
+    border-radius: 0;
+    /* Full width bar */
+    margin-top: auto;
+    align-items: center;
+    flex-wrap: nowrap !important;
+    /* Force single row */
+  }
+
+  .btn span {
+    display: none;
+  }
+
+  .btn {
+    padding: 0 12px;
+    flex: 0 0 auto;
+  }
+
+  /* Hide desktop-only elements inside mobile menu if necessary */
+
   .msg {
     max-width: 88%;
     padding: 12px 16px;
     font-size: 0.9rem;
   }
 }
+
+/* Close the main mobile media query here */
 
 /* Hide mobile button on desktop */
 @media (min-width: 769px) {

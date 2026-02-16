@@ -569,15 +569,6 @@ body {
   }
 }
 
-/* Desktop styles for hidden elements */
-@media (min-width: 769px) {
-
-  .mobile-header,
-  .mobile-overlay {
-    display: none;
-  }
-}
-
 /* Mobile Sidebar (Off-canvas) */
 .sidebar {
   position: fixed;

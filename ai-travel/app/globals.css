@@ -169,6 +169,7 @@ body {
   height: 100vh;
   /* Fallback */
   height: 100dvh;
+  padding-bottom: env(safe-area-inset-bottom);
 }
 
 /* Floating Badge */
@@ -214,6 +215,8 @@ body {
 /* CHAT AREA */
 .chat-container {
   flex: 1;
+  min-height: 0;
+  /* Important for nested flex scrolling */
   border-radius: 20px;
   padding: 24px;
   overflow-y: auto;
@@ -323,6 +326,7 @@ body {
   border-radius: 12px;
   border: none;
   cursor: pointer;
+  cursor: pointer;
   font-family: inherit;
   font-weight: 600;
   font-size: 0.9rem;
@@ -331,8 +335,10 @@ body {
   justify-content: center;
   gap: 8px;
   transition: all 0.2s ease;
-  height: 46px;
-  /* Match input height roughly */
+  height: 44px;
+  /* Reduced slightly for mobile fit */
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .btn-primary {
@@ -518,6 +524,9 @@ body {
 
   .input-area {
     padding: 12px;
+    flex-wrap: wrap;
+    /* Allow wrapping on very small screens if needed, though hidden on mobile */
+    gap: 8px;
   }
 
   .btn span {
@@ -525,7 +534,8 @@ body {
   }
 
   .btn {
-    padding: 0 16px;
+    padding: 0 12px;
+    flex: 0 0 auto;
   }
 
   /* Hide desktop-only elements inside mobile menu if necessary */

@@ -16,6 +16,7 @@ export default function Home() {
   const queryClient = useQueryClient();
   const [language, setLanguage] = useState<"id" | "en" | "jv">("id");
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Local state for optimistic updates and guest mode
   const [localMessages, setLocalMessages] = useState<{ role: "ai" | "user"; content: string }[]>([
@@ -517,22 +518,34 @@ ATURAN PENTING:
         <div className="flex-1 overflow-y-auto px-4 py-2 custom-scrollbar">
           {session && (
             <>
-              <div className="section-title mt-2">{t.history}</div>
-              <button
-                onClick={handleNewChat}
-                className="w-full flex items-center gap-2 py-2 px-3 mb-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors text-sm text-left"
-              >
-                <i className="fa-solid fa-plus text-green-400"></i> {t.newChat}
-              </button>
+              <div className="flex items-center gap-2 mb-4">
+                <div className="relative flex-1">
+                  <input
+                    type="text"
+                    placeholder="Cari chat..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full bg-white/5 border border-white/10 rounded-lg py-2 px-3 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-white/20 transition-all"
+                  />
+                </div>
+                <button
+                  onClick={handleNewChat}
+                  className="w-8 h-8 flex items-center justify-center rounded-lg bg-white/10 hover:bg-white/20 text-white transition-all border border-white/10"
+                  title={t.newChat}
+                >
+                  <i className="fa-solid fa-plus"></i>
+                </button>
+              </div>
 
-              <div className="flex flex-col gap-1">
-                {chats?.map((chat: any) => (
+              <div className="section-title mt-6">{t.history}</div>
+
+              <div className="flex flex-col gap-3 mt-2">
+                {chats?.filter((chat: any) => chat.title.toLowerCase().includes(searchQuery.toLowerCase())).map((chat: any) => (
                   <button
                     key={chat.id}
                     onClick={() => { setSelectedChatId(chat.id); setIsMobileMenuOpen(false); }}
-                    className={`w-full text-left py-2 px-3 rounded-lg text-xs truncate transition-colors ${selectedChatId === chat.id ? 'bg-white/20' : 'hover:bg-white/5'}`}
+                    className={`w-full text-left py-2 px-3 rounded-lg text-xs truncate transition-all duration-200 ${selectedChatId === chat.id ? 'bg-white/10 text-white font-medium' : 'text-gray-400 hover:bg-white/5 hover:text-gray-200'}`}
                   >
-                    <i className="fa-regular fa-message mr-2 opacity-70"></i>
                     {chat.title}
                   </button>
                 ))}
@@ -541,7 +554,7 @@ ATURAN PENTING:
           )}
 
           {/* Standard Sidebar Content */}
-          <div className="mt-6">
+          <div className="mt-10 pt-4 border-t border-white/5">
             <div className="section-title">{t.popularSpots}</div>
             <div className="flex-col gap-2">
               {popularSpots.map((spot, index) => (
@@ -573,10 +586,32 @@ ATURAN PENTING:
 
         <div className="chat-container glass" id="chat" ref={chatContainerRef}>
           {localMessages.map((msg, index) => (
-            <div key={index} className={`msg ${msg.role}`}>
+            <div key={index} className={`msg ${msg.role} group relative`}>
               <ReactMarkdown components={{ a: ({ node, ...props }) => <a {...props} target="_blank" rel="noopener noreferrer" style={{ color: '#38bdf8', textDecoration: 'underline' }} /> }}>
                 {msg.content}
               </ReactMarkdown>
+
+              {/* Message Actions */}
+              <div className={`absolute -bottom-6 ${msg.role === 'ai' ? 'left-0' : 'right-0'} opacity-0 group-hover:opacity-100 transition-opacity flex gap-2`}>
+                {msg.role === 'ai' && (
+                  <button
+                    onClick={() => navigator.clipboard.writeText(msg.content)}
+                    className="text-[10px] bg-slate-800/80 hover:bg-slate-700 text-slate-300 px-2 py-1 rounded-md backdrop-blur-sm border border-white/10 flex items-center gap-1 transition-colors"
+                    title="Salin Jawaban"
+                  >
+                    <i className="fa-regular fa-copy"></i> Salin
+                  </button>
+                )}
+                {msg.role === 'user' && (
+                  <button
+                    onClick={() => setInput(msg.content)}
+                    className="text-[10px] text-slate-400 hover:text-white px-2 py-1 rounded-md flex items-center gap-1 transition-colors hover:bg-white/5"
+                    title="Edit Pertanyaan"
+                  >
+                    <i className="fa-solid fa-pen"></i> Edit
+                  </button>
+                )}
+              </div>
             </div>
           ))}
           {isLoading && (

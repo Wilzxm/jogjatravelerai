@@ -23,6 +23,8 @@ export default function Home() {
     { role: "ai", content: "Halo! 👋\nMau liburan berapa hari dan budget berapa?" },
   ]);
 
+  const [weatherData, setWeatherData] = useState<string>("");
+
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
@@ -172,6 +174,20 @@ export default function Home() {
     }
   });
 
+  // Fetch weather on mount
+  useEffect(() => {
+    const fetchWeather = async () => {
+      try {
+        const res = await fetch('/api/weather');
+        const data = await res.json();
+        if (data.summary) setWeatherData(data.summary);
+      } catch (e) {
+        console.error("Failed to fetch weather", e);
+      }
+    };
+    fetchWeather();
+  }, []);
+
   // Sync remote messages to local state
   useEffect(() => {
     if (chatData?.messages) {
@@ -229,9 +245,12 @@ export default function Home() {
       languageInstruction = "Gunakan bahasa Indonesia yang santai tapi sopan.";
     }
 
+    const weatherInfo = weatherData ? `\nDATA CUACA REAL-TIME SAAT INI:\n${weatherData}\n` : "";
+
     return `
 Kamu adalah AI travel planner khusus untuk wilayah Daerah Istimewa Yogyakarta (DIY).
 Tugasmu adalah membuat itinerary lengkap + estimasi biaya transportasi untuk wisata di Jogja.
+${weatherInfo}
 
 ATURAN PENTING:
 1. HANYA jawab pertanyaan seputar wisata, kuliner, dan budaya di Provinsi DIY (Yogyakarta, Sleman, Bantul, Gunungkidul, Kulon Progo).
@@ -249,7 +268,11 @@ ATURAN PENTING:
      - ⏰ **${labels.hours}:** [Jam Buka]
      (Ganti 'Nama+Tempat' dengan nama tempat yang sesuai di link, dan [Jam Buka] dengan data nyata sesuai bahasa).
 
-7. **Review & Koreksi:**
+7. **CUACA REAL-TIME:**
+   - **WAJIB** sertakan info cuaca real-time (suhu dan kondisi) untuk setiap tempat wisata atau kuliner yang kamu rekomendasikan berdasarkan data cuaca yang diberikan di atas.
+   - Contoh: "Candi Prambanan (Cuaca saat ini: 28°C, Cerah)"
+
+8. **Review & Koreksi:**
    - Pastikan setiap tempat wisata memiliki link Google Maps pada namanya.
    - Pastikan rekomendasi biaya masuk akal.
 

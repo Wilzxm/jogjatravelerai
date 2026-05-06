@@ -129,21 +129,28 @@ ATURAN PENTING:
     const deepseekKey = process.env.DEEPSEEK_API_KEY;
 
     if (geminiKey) {
-      console.log("Using Google Gemini API (via OpenAI SDK)...");
-      const openai = new OpenAI({
-        apiKey: geminiKey,
-        baseURL: "https://generativelanguage.googleapis.com/v1beta/openai",
+      console.log("Using Google Gemini API (Native Fetch)...");
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          systemInstruction: {
+            parts: [{ text: "You are a helpful travel assistant for Yogyakarta." }]
+          },
+          contents: [{
+            role: "user",
+            parts: [{ text: prompt }]
+          }]
+        })
       });
 
-      const chatCompletion = await openai.chat.completions.create({
-        model: "gemini-1.5-flash",
-        messages: [
-          { role: "system", content: "You are a helpful travel assistant for Yogyakarta." },
-          { role: "user", content: prompt },
-        ],
-      });
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Gemini API Error: ${response.status} - ${errorText}`);
+      }
 
-      text = chatCompletion.choices[0]?.message?.content || "Maaf, Gemini tidak memberikan respon.";
+      const data = await response.json();
+      text = data.candidates?.[0]?.content?.parts?.[0]?.text || "Maaf, Gemini tidak memberikan respon.";
     } else if (deepseekKey) {
       console.log("Using DeepSeek API...");
       const response = await fetch("https://api.deepseek.com/chat/completions", {

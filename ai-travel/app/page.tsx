@@ -154,7 +154,7 @@ export default function Home() {
     onSuccess: (newChat) => {
       queryClient.invalidateQueries({ queryKey: ['chats'] });
       setSelectedChatId(newChat.id);
-      setLocalMessages([{ role: "ai", content: t.aiGreeting }]); // Reset UI for new chat
+      // We purposefully DO NOT reset localMessages here, so the user's optimistic prompt isn't wiped out!
     },
   });
 
@@ -175,10 +175,16 @@ export default function Home() {
   // Sync remote messages to local state
   useEffect(() => {
     if (chatData?.messages) {
-      setLocalMessages(chatData.messages.map((m: any) => ({ role: m.role, content: m.content })));
+      // Only overwrite local messages if remote has MORE or EQUAL messages (prevents stale remote data from wiping out our optimistic typing)
+      // Or if we just switched to this chat and localMessages is empty/greeting
+      const isSwitchingChat = localMessages.length <= 1;
+      const remoteIsMoreUpToDate = chatData.messages.length > localMessages.length;
+      
+      if (isSwitchingChat || remoteIsMoreUpToDate) {
+        setLocalMessages(chatData.messages.map((m: any) => ({ role: m.role, content: m.content })));
+      }
     } else if (selectedChatId === null && !isLoading) {
       // Only reset if we explicitly switched to "New Chat" (null ID) and aren't waiting for a create
-      // If we just loaded the page as guest, we keep the default greeting
       if (session && localMessages.length > 1) {
         setLocalMessages([{ role: "ai", content: t.aiGreeting }]);
       }

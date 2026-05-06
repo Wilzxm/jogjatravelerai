@@ -122,66 +122,96 @@ ATURAN PENTING:
 `;
 
     let text = "";
+    let success = false;
 
     // --- PRIORITAS 1: GOOGLE GEMINI API ---
     const geminiKey = process.env.GEMINI_API_KEY;
-    // --- PRIORITAS 2: DEEPSEEK API ---
-    const deepseekKey = process.env.DEEPSEEK_API_KEY;
-    
-    if (geminiKey) {
-      console.log("Using Google Gemini API...");
-      const openai = new OpenAI({
-        apiKey: geminiKey,
-        baseURL: "https://generativelanguage.googleapis.com/v1beta/openai/",
-      });
+    if (geminiKey && !success) {
+      try {
+        console.log("Attempting Google Gemini API...");
+        const openai = new OpenAI({
+          apiKey: geminiKey,
+          baseURL: "https://generativelanguage.googleapis.com/v1beta/openai/",
+        });
 
-      const chatCompletion = await openai.chat.completions.create({
-        model: "gemini-2.0-flash", // Menggunakan versi 2.0 terbaru
-        messages: [
-          { role: "system", content: "You are a helpful travel assistant for Yogyakarta." },
-          { role: "user", content: prompt },
-        ],
-      });
-
-      text = chatCompletion.choices[0]?.message?.content || "Maaf, Gemini tidak memberikan respon.";
-    } else if (deepseekKey) {
-      console.log("Using DeepSeek API...");
-      const response = await fetch("https://api.deepseek.com/chat/completions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${deepseekKey}`,
-        },
-        body: JSON.stringify({
-          model: "deepseek-chat",
+        const chatCompletion = await openai.chat.completions.create({
+          model: "gemini-2.0-flash",
           messages: [
             { role: "system", content: "You are a helpful travel assistant for Yogyakarta." },
             { role: "user", content: prompt },
           ],
-          stream: false,
-        }),
-      });
+        });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`DeepSeek API Error: ${response.status} - ${errorText}`);
+        if (chatCompletion.choices[0]?.message?.content) {
+          text = chatCompletion.choices[0].message.content;
+          success = true;
+        }
+      } catch (err: any) {
+        console.warn("Gemini API failed or limit reached (429/404):", err.message || err);
+        // Will seamlessly fallback to next provider
       }
+    }
 
-      const data = await response.json();
-      text = data.choices[0]?.message?.content || "Maaf, DeepSeek tidak memberikan respon.";
-    } else {
-      console.log("Using Groq API...");
-      const chatCompletion = await groq.chat.completions.create({
-        messages: [
-          {
-            role: "user",
-            content: prompt,
+    // --- PRIORITAS 2: DEEPSEEK API ---
+    const deepseekKey = process.env.DEEPSEEK_API_KEY;
+    if (deepseekKey && !success) {
+      try {
+        console.log("Attempting DeepSeek API...");
+        const response = await fetch("https://api.deepseek.com/chat/completions", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${deepseekKey}`,
           },
-        ],
-        model: "llama-3.3-70b-versatile",
-      });
+          body: JSON.stringify({
+            model: "deepseek-chat",
+            messages: [
+              { role: "system", content: "You are a helpful travel assistant for Yogyakarta." },
+              { role: "user", content: prompt },
+            ],
+            stream: false,
+          }),
+        });
 
-      text = chatCompletion.choices[0]?.message?.content || "Maaf, ada masalah saat menghubungi AI.";
+        if (response.ok) {
+          const data = await response.json();
+          if (data.choices[0]?.message?.content) {
+            text = data.choices[0].message.content;
+            success = true;
+          }
+        } else {
+          console.warn("DeepSeek API failed with status:", response.status);
+        }
+      } catch (err: any) {
+        console.warn("DeepSeek API failed:", err.message || err);
+      }
+    }
+
+    // --- PRIORITAS 3: GROQ API (FALLBACK TERAKHIR) ---
+    if (!success) {
+      try {
+        console.log("Attempting Groq API (Fallback)...");
+        const chatCompletion = await groq.chat.completions.create({
+          messages: [
+            {
+              role: "user",
+              content: prompt,
+            },
+          ],
+          model: "llama-3.3-70b-versatile",
+        });
+
+        if (chatCompletion.choices[0]?.message?.content) {
+          text = chatCompletion.choices[0].message.content;
+          success = true;
+        }
+      } catch (err: any) {
+        console.error("Groq API failed:", err.message || err);
+      }
+    }
+
+    if (!success) {
+      return Response.json({ reply: "Maaf, semua server AI sedang sibuk atau limit tercapai. Coba lagi nanti." }, { status: 500 });
     }
 
     return Response.json({ reply: text });

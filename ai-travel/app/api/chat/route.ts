@@ -125,7 +125,34 @@ ATURAN PENTING:
     let text = "";
     let success = false;
 
-    // --- PRIORITAS 1: GOOGLE GEMINI API ---
+    // --- PRIORITAS 1: OPENROUTER API (GEMINI FREE) ---
+    const openrouterKey = process.env.OPENROUTER_API_KEY;
+    if (openrouterKey && !success) {
+      try {
+        console.log("Attempting OpenRouter API (Gemini)...");
+        const openai = new OpenAI({
+          apiKey: openrouterKey,
+          baseURL: "https://openrouter.ai/api/v1",
+        });
+
+        const chatCompletion = await openai.chat.completions.create({
+          model: "google/gemini-2.5-flash:free",
+          messages: [
+            { role: "system", content: "You are a helpful travel assistant for Yogyakarta." },
+            { role: "user", content: prompt },
+          ],
+        });
+
+        if (chatCompletion.choices[0]?.message?.content) {
+          text = chatCompletion.choices[0].message.content;
+          success = true;
+        }
+      } catch (err: any) {
+        console.warn("OpenRouter API failed:", err.message || err);
+      }
+    }
+
+    // --- PRIORITAS 2: GOOGLE GEMINI API (NATIVE) ---
     const geminiKey = process.env.GEMINI_API_KEY;
     if (geminiKey && !success) {
       try {
@@ -153,7 +180,7 @@ ATURAN PENTING:
       }
     }
 
-    // --- PRIORITAS 2: DEEPSEEK API ---
+    // --- PRIORITAS 3: DEEPSEEK API ---
     const deepseekKey = process.env.DEEPSEEK_API_KEY;
     if (deepseekKey && !success) {
       try {
@@ -188,7 +215,7 @@ ATURAN PENTING:
       }
     }
 
-    // --- PRIORITAS 3: GROQ API (FALLBACK TERAKHIR) ---
+    // --- PRIORITAS 4: GROQ API (FALLBACK TERAKHIR) ---
     if (!success) {
       try {
         console.log("Attempting Groq API (Fallback)...");

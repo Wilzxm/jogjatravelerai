@@ -5,6 +5,7 @@ const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 export async function POST(req: Request) {
   try {
+    console.log("=== V2: AI ROUTE CALLED (Fault Tolerant) ===");
     const body = await req.json();
     const message = body.message;
     const language = body.language || "id"; // Default to Indonesian
